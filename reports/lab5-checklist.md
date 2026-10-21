@@ -84,7 +84,7 @@ cat argocd-apps/booking.yaml
 
 **Підпис:** Структура репозиторію DevOps-gitops і Application booking
 
-**Що видно:**
+**Що видно:** Репозиторій `MarcoGr11/DevOps-gitops` публічний (`"visibility": "PUBLIC"`), тож Argo CD читає його без облікових даних. У репозиторії лише конфігурація: `bootstrap/root.yaml`, `argocd-apps/booking.yaml`, чарт `charts/booking` (Chart.yaml, шаблони з лаби №4, `values.yaml`, `values-dev.yaml`, `values-prod.yaml` і новий `values-minikube.yaml`), `README.md` і `GITOPS-DEMO.md`. Application `booking` бере чарт із гілки `main` (`path: charts/booking`, `valueFiles: values-minikube.yaml`) і розгортає його в `coworking-booking` на `https://kubernetes.default.svc`; `syncPolicy.automated` має `prune: true` і `selfHeal: true`, а `CreateNamespace=true` створює namespace, якщо його немає. Вивід не вмістився в одне вікно, тому склеєно три знімки.
 
 ### 5-02-argocd-install.png — 3.b Argo CD встановлено
 
@@ -103,7 +103,7 @@ kubectl -n argocd get secret argocd-initial-admin-secret
 
 **Підпис:** Поди Argo CD, версії клієнта й сервера, видалений initial-admin-secret
 
-**Що видно:**
+**Що видно:** Усі 7 подів Argo CD у namespace `argocd` мають стан `Running` і `1/1` без перезапусків: application-controller, applicationset-controller, dex-server, notifications-controller, redis, repo-server і server. Клієнт і сервер однієї версії: `argocd: v3.5.6+c2b1e30.dirty` і `argocd-server: v3.5.6`. Secret `argocd-initial-admin-secret` повертає `NotFound`: після зміни пароля admin його видалено, тож початковий пароль у кластері більше не зберігається.
 
 ---
 
@@ -121,7 +121,7 @@ kubectl -n argocd get secret argocd-initial-admin-secret
 
 **Підпис:** Дерево ресурсів застосунку booking в інтерфейсі Argo CD
 
-**Що видно:**
+**Що видно:** Зверху — Application `root` (App of Apps): `Healthy`, `Synced to main (3193f8a)`, у дереві в нього один дочірній об'єкт — Application `booking`. Знизу — сам `booking`: `Healthy`, `Synced to main (8e8fe01)`, останній автоматичний sync о 19:58:27 на коміт «Reset booking to 1.0.0 for live demo». Дерево повторює те, що рендерить чарт: ConfigMap `booking-config`, PVC `booking-postgres-data`, Services `booking-api` і `booking-postgres`, Deployments `booking-api`, `booking-postgres`, `booking-worker` і Ingress `booking-api`. Під Deployment `booking-api` видно три ReplicaSet — по одному на кожен образ із попередніх синхронізацій (rev:7 — невдалий 9.9.9, rev:8 — 1.1.0, rev:9 — поточний 1.0.0); поди має лише поточний `568c89898f` (2 поди `running 1/1`), так само по одному поду в postgres і worker. Secret у дереві немає: `booking-secret` створено вручну, і чарт лише посилається на нього через `existingSecret`. Верхній кадр знято о 19:51, нижній — о 20:05.
 
 ### 5-04-bootstrap.png — 4.b Bootstrap через root (App of Apps)
 
@@ -129,6 +129,7 @@ kubectl -n argocd get secret argocd-initial-admin-secret
 
 **Команди:**
 ```bash
+cd ~/PycharmProjects/DevOps-gitops
 kubectl apply -f bootstrap/root.yaml
 argocd app list
 argocd app get booking | grep -E "Path|Helm Values|Sync Policy|Sync Status|Health Status"
@@ -143,7 +144,7 @@ curl -s localhost:8081/api/health/; echo
 
 **Підпис:** root і booking у стані Synced/Healthy, порожній helm list, версія 1.0.0
 
-**Що видно:**
+**Що видно:** Повторний `kubectl apply -f bootstrap/root.yaml` відповідає `application.argoproj.io/root unchanged`: це єдиний маніфест, який застосовано вручну, і він уже в кластері. `argocd app list` показує обидва застосунки `Synced` / `Healthy` з авто-синхронізацією `Auto-Prune`: `root` дивиться на `argocd-apps`, `booking` — на `charts/booking`, обидва з гілки `main` репозиторію DevOps-gitops. Для `booking` використано `Helm Values: values-minikube.yaml`, стан `Synced to main (8e8fe01)`. У namespace `coworking-booking` працюють 4 поди (2 api, postgres, worker), а `helm list` порожній, лише заголовок: Argo CD використовує Helm тільки для рендеру шаблонів і не створює Helm-реліз. Застосунок відповідає `"status":"ok","version":"1.0.0"`.
 
 ---
 
@@ -155,11 +156,12 @@ curl -s localhost:8081/api/health/; echo
 
 **Команди:**
 ```bash
+cd ~/PycharmProjects/DevOps-gitops
 sed -i '' 's/tag: "1.0.0"/tag: "1.1.0"/' charts/booking/values-minikube.yaml
-git diff
-git commit -am "Release booking 1.1.0"
+git --no-pager diff charts/
+git commit -m "Release booking 1.1.0" charts/booking/values-minikube.yaml
 git push
-git log --oneline -3
+git --no-pager log --oneline -3
 ```
 
 **Має бути видно:** у `git diff` два рядки `-    tag: "1.0.0"` / `+    tag: "1.1.0"`; коміт і `main -> main` у виводі push.
@@ -168,14 +170,15 @@ git log --oneline -3
 
 **Підпис:** Оновлення тегу до 1.1.0 комітом у репозиторій конфігурації
 
-**Що видно:**
+**Що видно:** `sed` змінює в `charts/booking/values-minikube.yaml` лише теги образів: у `git diff` для api і worker `tag: "1.0.0"` → `tag: "1.1.0"`. Коміт `e427c63 Release booking 1.1.0` (1 файл, 2 рядки) запушено напряму в `main` (`8e8fe01..e427c63  main -> main`), і `git log` показує його над попереднім `8e8fe01 Reset booking to 1.0.0 for live demo`. Жодної команди kubectl чи helm тут немає: оновлення — це лише коміт у Git.
 
 ### 5-05b-release-result.png — 5.b Синхронізація і нова версія
 
-**Що робимо:** Просимо Argo CD перечитати Git, чекаємо Synced/Healthy, дивимось поди й перевіряємо версію. Перед `curl` перезапустити port-forward у терміналі №3 (старий тримається за видалений под).
+**Що робимо:** Просимо Argo CD перечитати Git, чекаємо Synced/Healthy і дивимось поди та історію синхронізацій. (Для `curl` після rollout треба перезапустити port-forward у терміналі №3: старий тримається за видалений под.)
 
 **Команди:**
 ```bash
+cd ~/PycharmProjects/DevOps-gitops
 argocd app get booking --refresh | grep -E "Sync Status|Health Status"
 argocd app wait booking --sync --health --timeout 180 | grep -E "Sync Status|Health Status"
 kubectl -n coworking-booking get pods
@@ -192,7 +195,7 @@ curl -s localhost:8081/api/health/; echo
 
 **Підпис:** Argo CD синхронізував коміт, rolling update до 1.1.0
 
-**Що видно:**
+**Що видно:** Одразу після `--refresh` Argo CD бачить новий коміт: `OutOfSync from main (e427c63)`, Health ще `Healthy`. Автосинхронізація застосовує його без ручних команд, і `argocd app wait` завершується на `Synced to main (e427c63)`, `Healthy`. Список подів показує rolling update: два старі поди api `568c89898f` і старий worker `c654dcb8f` у стані `Terminating`, нові `booking-api-5bcd48fdc6-*` (13s і 7s) і `booking-worker-7fcbd6667b-64r8l` (13s) уже `Running 1/1`, а postgres не перезапускався (96m). В `argocd app history` остання ревізія 11 — коміт `e427c63` о 20:16:54, тобто кожна синхронізація прив'язана до коміту в `main`. Перевірки `curl` на цьому кадрі немає; те, що поди ReplicaSet `5bcd48fdc6` віддають `"version":"1.1.0"`, видно на рис. 9 і 10.
 
 ---
 
@@ -231,7 +234,7 @@ kubectl -n coworking-booking get deploy booking-api
 
 **Підпис:** Дрейф без selfHeal: OutOfSync, 5 реплік лишаються
 
-**Що видно:**
+**Що видно:** `syncPolicy` містить лише `"automated":{"prune":true}`, без `selfHeal`. Після `kubectl scale ... --replicas=5` і 30 секунд очікування Argo CD бачить розбіжність із Git: `Sync Status: OutOfSync from main (93b7196)`, рядок Deployment `booking-api` — `OutOfSync`, хоча Health лишається `Healthy`. Ручна зміна не скасовується: `booking-api 5/5`. Автосинхронізація без selfHeal спрацьовує лише на нові коміти, а дрейф у кластері тільки показує.
 
 ### Повернути selfHeal (не знімається, одразу після 5-06a)
 
@@ -264,7 +267,7 @@ argocd app get booking | grep -E "Sync Status|Health Status"
 
 **Підпис:** selfHeal: Argo CD повертає 2 репліки з Git за кілька секунд
 
-**Що видно:**
+**Що видно:** Після коміту `3ee96ed` (revert вимкнення) `syncPolicy` знову містить `"selfHeal":true`. Через `kubectl scale` Deployment у 19:55:30 має `2/5` (запит на 5 реплік), а вже о 19:55:32 знову `2/2`: Argo CD помітив дрейф і повернув значення `replicaCount.api: 2` з `values-minikube.yaml`. Наступні перевірки до 19:55:39 стабільно показують `2/2`, а застосунок `Synced to main (3ee96ed)`, `Healthy`.
 
 ### 5-06c-degraded.png — 6.c Synced, але Degraded
 
@@ -288,7 +291,7 @@ curl -s localhost:8081/api/health/; echo
 
 **Підпис:** Synced, але Degraded: неіснуючий тег 9.9.9, старі поди працюють
 
-**Що видно:**
+**Що видно:** У `git diff` змінюється лише тег api: `"1.1.0"` → `"9.9.9"`, worker не зачеплено. Коміт `3ab2065` запушено в `main`; одразу після refresh — `OutOfSync from main (3ab2065)`, після `argocd app wait --degraded` — `Synced to main (3ab2065)` і `Health Status: Degraded`. Новий под `booking-api-5b84fdf7cc-ng27x` у стані `ErrImagePull` (0/1, 61s), бо образу `devops-api:9.9.9` немає. Deployment має `Progressing=False ProgressDeadlineExceeded` (спрацював `progressDeadlineSeconds: 60`) і `Available=True`: завдяки `maxUnavailable: 0` два старі поди `5bcd48fdc6` лишились `Running`, і `curl` відповідає `"status":"ok","version":"1.1.0"`. Тобто Synced означає відповідність Git, а Degraded — що версія з Git не працює.
 
 ### 5-06d-revert.png — 6.d Відкат через git revert
 
@@ -310,7 +313,7 @@ curl -s localhost:8081/api/health/; echo
 
 **Підпис:** Відкат через git revert: знову Synced/Healthy, версія 1.1.0
 
-**Що видно:**
+**Що видно:** `git log` показує проблемний коміт `3ab2065 Release booking api 9.9.9`; `git revert` створює коміт `05a7178 Revert "Release booking api 9.9.9"`, який повертає тег `1.1.0`, і пушить його в `main`. Після refresh застосунок `OutOfSync from main (05a7178)` і ще `Degraded`, а після синхронізації — `Synced to main (05a7178)`, `Healthy`. В `argocd app history` кожна ревізія — це коміт у `main`: остання пара — `3ab2065` (9.9.9) і `05a7178` (revert). Под з `ErrImagePull` зник, лишились 4 поди `Running`, і `curl` повертає `"version":"1.1.0"`.
 
 ---
 
@@ -320,7 +323,7 @@ curl -s localhost:8081/api/health/; echo
 
 ```bash
 sed -i '' 's/tag: "1.1.0"/tag: "1.0.0"/' charts/booking/values-minikube.yaml
-git commit -am "Reset booking to 1.0.0 for live demo"
+git commit -m "Reset booking to 1.0.0 for live demo" charts/booking/values-minikube.yaml
 git push
 argocd app get booking --refresh | grep -E "Sync Status|Health Status"
 argocd app wait booking --sync --health --timeout 180 | grep -E "Sync Status|Health Status"
