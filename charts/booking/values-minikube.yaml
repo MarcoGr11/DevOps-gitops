@@ -1,0 +1,31 @@
+# Argo CD (minikube): only differences from values.yaml.
+# Secret booking-secret is created in the cluster by hand, never stored in Git (see README).
+existingSecret: booking-secret
+
+image:
+  api:
+    repository: ghcr.io/marcogr11/devops-api
+    tag: "1.0.0"
+    pullPolicy: IfNotPresent
+  worker:
+    repository: ghcr.io/marcogr11/devops-worker
+    tag: "1.0.0"
+    pullPolicy: IfNotPresent
+
+replicaCount:
+  api: 2
+  worker: 1
+
+ingress:
+  enabled: true
+  host: dev.booking.local
+
+# Argo CD runs Helm hooks on every sync (PreSync), and test pods would show up as app objects
+hooks:
+  dbCheck:
+    enabled: false
+tests:
+  enabled: false
+
+# report a stuck rollout (e.g. bad image tag) as Degraded after 60 s instead of 10 min
+progressDeadlineSeconds: 60

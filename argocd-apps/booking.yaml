@@ -1,0 +1,22 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: booking # also the Helm release name -> objects booking-api, booking-worker, booking-postgres
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/MarcoGr11/DevOps-gitops.git
+    targetRevision: main
+    path: charts/booking
+    helm:
+      valueFiles:
+        - values-minikube.yaml
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: coworking-booking
+  syncPolicy:
+    automated:
+      prune: true
+    syncOptions:
+      - CreateNamespace=true
