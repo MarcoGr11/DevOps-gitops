@@ -5,7 +5,7 @@ existingSecret: booking-secret
 image:
   api:
     repository: ghcr.io/marcogr11/devops-api
-    tag: "9.9.9"
+    tag: "1.1.0"
     pullPolicy: IfNotPresent
   worker:
     repository: ghcr.io/marcogr11/devops-worker
