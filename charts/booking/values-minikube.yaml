@@ -13,7 +13,7 @@ image:
     pullPolicy: IfNotPresent
 
 replicaCount:
-  api: 2
+  api: 5
   worker: 1
 
 ingress:
@@ -29,3 +29,16 @@ tests:
 
 # report a stuck rollout (e.g. bad image tag) as Degraded after 60 s instead of 10 min
 progressDeadlineSeconds: 60
+
+# Canary for api. No traffic router: the Service balances across pods, so weight = share of pods (20% = 1 of 5).
+rollout:
+  enabled: true
+  strategy:
+    canary:
+      steps:
+        - setWeight: 20
+        - pause: {} # manual: kubectl argo rollouts promote
+        - setWeight: 60
+        - pause: {duration: 30s}
+        - setWeight: 80
+        - pause: {duration: 30s}

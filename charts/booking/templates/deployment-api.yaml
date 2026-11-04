@@ -1,3 +1,4 @@
+{{- if not .Values.rollout.enabled }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -56,3 +57,4 @@ spec:
               # give the Service time to drop this pod from endpoints before gunicorn stops
               exec:
                 command: ["sleep", "5"]
+{{- end }}

@@ -19,6 +19,11 @@ replicaCount:
   worker: 2
   postgres: 1 # single instance on a RWO volume; do not scale
 
+# api: Argo Rollouts Rollout instead of Deployment (needs the controller; strategy goes into spec.strategy)
+rollout:
+  enabled: false
+  strategy: {}
+
 # api Deployment: seconds before a stuck rollout is reported as failed (null -> k8s default 600)
 progressDeadlineSeconds: null
 
