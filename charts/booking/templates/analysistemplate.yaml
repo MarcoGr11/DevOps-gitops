@@ -1,0 +1,22 @@
+{{- if and .Values.rollout.enabled .Values.rollout.analysis.enabled }}
+apiVersion: argoproj.io/v1alpha1
+kind: AnalysisTemplate
+metadata:
+  name: {{ include "booking.fullname" . }}-success-rate
+  labels:
+    {{- include "booking.labels" (dict "ctx" $) | nindent 4 }}
+spec:
+  metrics:
+    - name: success-rate
+      interval: 30s
+      count: 4
+      failureLimit: 1 # the second measurement below the threshold fails the run
+      successCondition: result[0] >= 0.95
+      provider:
+        prometheus:
+          address: {{ .Values.rollout.analysis.prometheusAddress }}
+          query: |
+            sum(rate(http_requests_total{ {{- .Values.rollout.analysis.selector }},status!~"5.."}[1m]))
+            /
+            sum(rate(http_requests_total{ {{- .Values.rollout.analysis.selector }}}[1m]))
+{{- end }}

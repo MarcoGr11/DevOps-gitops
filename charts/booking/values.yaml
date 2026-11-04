@@ -23,6 +23,11 @@ replicaCount:
 rollout:
   enabled: false
   strategy: {}
+  # AnalysisTemplate <fullname>-success-rate: share of non-5xx requests from Prometheus, threshold 95%
+  analysis:
+    enabled: false
+    prometheusAddress: ""
+    selector: ""
 
 # /metrics scraping and the Grafana dashboard (need kube-prometheus-stack CRDs and an api image with /metrics)
 metrics:

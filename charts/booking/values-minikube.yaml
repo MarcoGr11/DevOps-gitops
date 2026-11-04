@@ -39,14 +39,20 @@ env:
     value: "0"
 
 # Canary for api. No traffic router: the Service balances across pods, so weight = share of pods (20% = 1 of 5).
+# The analysis step blocks the release: below 95% success it aborts by itself and returns to stable.
 rollout:
   enabled: true
+  analysis:
+    enabled: true
+    prometheusAddress: http://kps-prometheus.monitoring:9090
+    selector: 'namespace="coworking-booking"'
   strategy:
     canary:
       steps:
         - setWeight: 20
-        - pause: {} # manual: kubectl argo rollouts promote
-        - setWeight: 60
         - pause: {duration: 30s}
-        - setWeight: 80
+        - analysis:
+            templates:
+              - templateName: booking-success-rate
+        - setWeight: 60
         - pause: {duration: 30s}
