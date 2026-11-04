@@ -3,6 +3,8 @@ apiVersion: argoproj.io/v1alpha1
 kind: AnalysisTemplate
 metadata:
   name: {{ include "booking.fullname" . }}-success-rate
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1" # before the Rollout that references it
   labels:
     {{- include "booking.labels" (dict "ctx" $) | nindent 4 }}
 spec:
