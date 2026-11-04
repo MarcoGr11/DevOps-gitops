@@ -5,7 +5,7 @@ existingSecret: booking-secret
 image:
   api:
     repository: ghcr.io/marcogr11/devops-api
-    tag: "1.5.0"
+    tag: "1.6.0"
     pullPolicy: IfNotPresent
   worker:
     repository: ghcr.io/marcogr11/devops-worker
@@ -36,7 +36,7 @@ metrics:
 # share of api requests answered with 500 (see api/booking/metrics_middleware.py)
 env:
   - name: FAIL_RATE
-    value: "0"
+    value: "0.5"
 
 # Canary for api. No traffic router: the Service balances across pods, so weight = share of pods (20% = 1 of 5).
 # The analysis step blocks the release: below 95% success it aborts by itself and returns to stable.
