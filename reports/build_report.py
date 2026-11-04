@@ -65,6 +65,28 @@ LABS = {
             "завершено через git revert."
         ),
     },
+    "7": {
+        "pdf": "lab7-observability.pdf",
+        "title": "Лабораторна робота №7. Observability: метрики, логи, дашборди й відкат за метриками",
+        "versions": (
+            "Kubernetes v1.37.0 (minikube, kubectl v1.37.1), Argo CD v3.6.1, Argo Rollouts v1.10.1 (чарт 2.43.8), "
+            "kube-prometheus-stack 92.18.0 (Grafana 13.3.0), Loki 3.7.9 (чарт 20.4.1), Alloy v1.21.3 (чарт 1.15.0), Helm v3.22.0"
+        ),
+        "intro": (
+            "Застосунок із лаби №6 віддає власні метрики `http_requests_total` і `http_request_duration_seconds` на `/metrics` "
+            "і пише кожен запит у stdout рядком JSON. kube-prometheus-stack, Loki і Alloy встановлені з Git окремими "
+            "Application, а ServiceMonitor, дашборд Booking API і AnalysisTemplate лежать у чарті `charts/booking`. Між "
+            "кроками canary запускається AnalysisRun: кожні 30 с він рахує частку відповідей без 5xx і вимагає щонайменше "
+            "0.95. Змінна `FAIL_RATE` дає змогу випустити образ, який відповідає помилкою на задану частку запитів."
+        ),
+        "conclusion": (
+            "У лабі №6 рішення про реліз приймала людина: canary стояв на паузі, доки хтось не виконає promote або abort. "
+            "Тут те саме рішення приймає AnalysisRun за метрикою, яку застосунок віддає сам: хороший реліз дійшов до кінця "
+            "без втручання, а поганий зупинився автоматично, і трафік повернувся на stable. Помилки видно на дашборді й у "
+            "Loki з прив'язкою до поду та версії, тому причину можна знайти без входу в под. Git і далі лишається джерелом "
+            "правди: після автоматичного abort застосунок має стан Synced і Degraded, доки не зроблено git revert."
+        ),
+    },
 }
 
 ITEM_RE = re.compile(r"^### (\S+\.png) — (.+)$")
