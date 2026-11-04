@@ -1,0 +1,16 @@
+{{- if .Values.metrics.enabled }}
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: {{ include "booking.fullname" . }}-api
+  labels:
+    {{- include "booking.labels" (dict "ctx" $ "component" "api") | nindent 4 }}
+spec:
+  selector:
+    matchLabels:
+      {{- include "booking.selectorLabels" (dict "ctx" $ "component" "api") | nindent 6 }}
+  endpoints:
+    - port: http
+      path: {{ .Values.metrics.path }}
+      interval: 15s
+{{- end }}

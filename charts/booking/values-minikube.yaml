@@ -5,7 +5,7 @@ existingSecret: booking-secret
 image:
   api:
     repository: ghcr.io/marcogr11/devops-api
-    tag: "1.1.0"
+    tag: "1.4.0"
     pullPolicy: IfNotPresent
   worker:
     repository: ghcr.io/marcogr11/devops-worker
@@ -29,6 +29,14 @@ tests:
 
 # report a stuck rollout (e.g. bad image tag) as Degraded after 60 s instead of 10 min
 progressDeadlineSeconds: 60
+
+metrics:
+  enabled: true
+
+# share of api requests answered with 500 (see api/booking/metrics_middleware.py)
+env:
+  - name: FAIL_RATE
+    value: "0"
 
 # Canary for api. No traffic router: the Service balances across pods, so weight = share of pods (20% = 1 of 5).
 rollout:

@@ -24,6 +24,14 @@ rollout:
   enabled: false
   strategy: {}
 
+# /metrics scraping and the Grafana dashboard (need kube-prometheus-stack CRDs and an api image with /metrics)
+metrics:
+  enabled: false
+  path: /metrics
+
+# extra environment for the api container, e.g. FAIL_RATE
+env: []
+
 # api Deployment: seconds before a stuck rollout is reported as failed (null -> k8s default 600)
 progressDeadlineSeconds: null
 
