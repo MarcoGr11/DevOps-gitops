@@ -1,7 +1,7 @@
-"""Build reports/lab5-gitops.pdf from reports/lab5-checklist.md and PNGs in reports/screens/лаб5/.
+"""Build reports/lab<N>-*.pdf from reports/lab<N>-checklist.md and PNGs in reports/screens/лаб<N>/.
 
-Usage:  python reports/build_report.py 5
-        python reports/build_report.py 5 --check  # only list missing screenshots / empty texts
+Usage:  python reports/build_report.py 6
+        python reports/build_report.py 6 --check  # only list missing screenshots / empty texts
 Needs:  pip install reportlab pillow   (fonts: macOS Arial / Courier New from /System/Library/Fonts/Supplemental)
 """
 import re
@@ -37,6 +37,32 @@ LABS = {
             "а ручні зміни через kubectl ніхто не помічає. У GitOps історія змін — це git log з авторами, дрейф одразу "
             "видно як OutOfSync, а selfHeal за кілька секунд повертає стан з Git. Стан Synced, але Degraded показав, що "
             "Argo CD гарантує відповідність Git, а не працездатність версії, тому й відкат робиться через git revert."
+        ),
+    },
+    "6": {
+        "pdf": "lab6-rollouts.pdf",
+        "title": "Лабораторна робота №6. Progressive delivery: canary з Argo Rollouts",
+        "versions": (
+            "Kubernetes v1.37.0 (minikube, kubectl v1.37.1), Argo CD v3.5.6, Argo Rollouts v1.10.1 "
+            "(чарт argo-rollouts 2.43.8, плагін kubectl v1.10.0), Helm v3.22.0"
+        ),
+        "intro": (
+            "Проєкт із лаби №5 (система бронювання коворкінгу під керуванням Argo CD) доповнено поступовими релізами для "
+            "api. Контролер Argo Rollouts встановлюється з Git окремим Application `argo-rollouts`. У чарті `charts/booking` "
+            "прапорець `rollout.enabled` замінює Deployment `booking-api` на Rollout із тим самим шаблоном пода; worker і "
+            "postgres лишаються Deployment. У `values-minikube.yaml` 5 реплік і стратегія canary: `setWeight` 20, 60, 80, "
+            "ручна пауза `pause: {}` після 20% і паузи по 30 с після 60% і 80%. Маршрутизатора трафіку немає, тому вага "
+            "задається часткою подів за звичайним Service. Canary обрано тому, що api не зберігає стан між запитами, "
+            "нову версію можна перевірити на малій частці запитів, а додаткових подів і preview-сервісу, як у blue-green, "
+            "не потрібно. Образи `ghcr.io/marcogr11/devops-api` мають теги 1.1.0, 1.2.0 і 1.3.0, версію видно в `/api/health/`."
+        ),
+        "conclusion": (
+            "Під час rolling update в лабах №3 і №5 Deployment замінює поди безперервно: зупинитись на проміжній частці "
+            "й перевірити нову версію можна лише вручну, а скасування означає ще один реліз назад. Canary з Argo Rollouts "
+            "ділить реліз на кроки: нова версія спершу отримує приблизно 20% запитів і чекає ручного рішення promote. "
+            "Команда abort одразу повертає всі поди на stable-версію, тому користувачі майже не зачеплені невдалим релізом. "
+            "Git і далі лишається джерелом правди: після abort застосунок має стан Synced і Degraded, доки відкат не "
+            "завершено через git revert."
         ),
     },
 }
@@ -158,7 +184,8 @@ def build(lab, check_only):
                 buf = BytesIO()
                 part.save(buf, "PNG")
                 imgs.append(Image(buf, part.width * scale, part.height * scale))
-            cap = p(f"Рис. {n}. {it['caption'] or it['title']}", caption)
+            text = re.sub(r"^Рис\. \d+\. ", "", it["caption"] or it["title"])  # the checklist may number captions itself
+            cap = p(f"Рис. {n}. {text}", caption)
             story.append(KeepTogether(head + [p(it["title"], h2), p(it["what"]), imgs[0]] + ([cap] if len(imgs) == 1 else [])))
             if len(imgs) > 1:
                 story.append(KeepTogether([imgs[1], cap]))
