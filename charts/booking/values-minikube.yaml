@@ -13,7 +13,7 @@ image:
     pullPolicy: IfNotPresent
 
 replicaCount:
-  api: 8
+  api: 5
   worker: 1
 
 ingress:
