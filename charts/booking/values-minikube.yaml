@@ -20,7 +20,6 @@ ingress:
   enabled: true
   host: dev.booking.local
 
-# Argo CD runs Helm hooks on every sync (PreSync), and test pods would show up as app objects
 hooks:
   dbCheck:
     enabled: false
