@@ -9,7 +9,7 @@ image:
     pullPolicy: IfNotPresent
   worker:
     repository: ghcr.io/marcogr11/devops-worker
-    tag: "1.2.0"
+    tag: "1.1.0"
     pullPolicy: IfNotPresent
 
 replicaCount:
